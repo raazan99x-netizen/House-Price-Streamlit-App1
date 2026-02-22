@@ -1,0 +1,237 @@
+# ================= TRAIN-TEST SPLIT =================
+# Splits dataset into training and testing sets.
+# Model learns from training data and is evaluated on test data.
+
+# 1. Pehle X split hoga → train & test
+# 2. Phir y split hoga → train & test
+
+# test_size=0.2
+# → 20% data for testing
+# → 80% data for training
+
+# random_state=42
+# → Fixes random splitting for reproducibility.
+# → Same train/test split every time code runs.
+# → Ensures consistent results and fair model comparison.
+
+# Without random_state:
+# → Data split changes every run.
+# → Model scores may slightly vary each time.
+
+# Output:
+# Returned order is IMPORTANT and always:
+# X_train, X_test, y_train, y_test
+
+# Meaning:
+# X_train ↔ y_train  (used for training the model)
+# X_test  ↔ y_test   (used for evaluating the model)
+
+# The split keeps row alignment.
+# Each row in X_train corresponds to the same row in y_train.
+# Each row in X_test corresponds to the same row in y_test.
+
+# X_train, y_train → used to train model
+# X_test, y_test   → used to evaluate model
+# ==============================================================
+
+# ================= LINEAR REGRESSION WORKFLOW =================
+
+# 1️⃣ Create Model
+# LinearRegression() creates an empty model object.
+# At this stage, model has NOT learned anything.
+
+# 2️⃣ Train Model (fit)
+# model.fit(X_train, y_train)
+# → Learns relationship between features (X) and target (y).
+# → Internally calculates weights (coefficients) and intercept.
+# → After this step, model is considered "trained".
+
+# 3️⃣ Make Predictions (predict)
+# y_pred = model.predict(X_test)
+# → Uses learned weights from training.
+# → Applies formula: y = w1*x1 + w2*x2 + ... + b
+# → Generates predicted values for unseen test data.
+
+# ⚠ Important:
+# If fit() is not called before predict(),
+# model will raise NotFittedError.
+# ===============================================================
+
+# ================= MODEL EVALUATION =================
+
+# Importing Evaluation metrics for testing model performance.
+
+# R² Score:
+# Measures how well the model explains variance in target.
+# Range:
+# 1.0  → Perfect prediction
+# 0.0  → No better than mean prediction
+# < 0  → Very poor model
+
+# RMSE (Root Mean Squared Error):
+# Measures average prediction error.
+# Same unit as target variable (e.g., price).
+# Lower RMSE → Better model performance.
+
+# Example:
+
+# RMSE = 100000
+# → On average prediction ₹1 lakh se galat ho sakta hai.
+
+# R² focuses on goodness of fit.
+# RMSE focuses on magnitude of error.
+
+# ===============================================================
+
+# ================= METRIC INTERPRETATION GUIDE =================
+
+# R² (Coefficient of Determination):
+# → Measures how much variance in target is explained by model.
+# → Range:
+#    1.0  → Perfect prediction
+#    0.0  → Same as predicting mean
+#   < 0   → Worse than mean prediction
+
+# RMSE (Root Mean Squared Error):
+# → Measures average prediction error (in actual unit, e.g., price).
+# → Lower RMSE = better.
+# → Same unit as target variable.
+
+# ---------------- Interpretation Cases ----------------
+
+# 1️⃣ High R² + Low RMSE
+# → Ideal case.
+# → Model explains pattern well and makes small errors.
+
+# 2️⃣ High R² + High RMSE
+# → Data scale may be large.
+# → Model captures pattern, but absolute errors look big due to large target values.
+
+# 3️⃣ Low R² + Small RMSE
+# → Model likely predicting near mean.              
+# → Not learning real pattern.
+# → Data variation may be small.
+# Example:
+# House prices range:
+# ₹ 10,00,000 to ₹ 10,50,000
+# Very small variation.
+# Agar model sabko approx ₹10,25,000 predict kare:
+#  - Error small hoga → RMSE small
+#  - But variation explain nahi kiya → R² low
+
+# 4️⃣ Low R² + High RMSE
+# → Poor model.
+# → Large errors and weak pattern learning.
+
+# 5️⃣ R² = 1 and RMSE = 0
+# → Perfect prediction (rare in real-world data).
+# → Usually indicates overfitting or synthetic data.
+
+# Situation	            Meaning
+# High R² + Low RMSE  =	Ideal model
+# High R² + High RMSE	=   Data scale large
+# Low R² + Small RMSE	=   Model predicting near mean
+# Low R² + High RMSE	=   Bad model
+# =================================================================
+
+# ================= ENCODING RULES (VERY IMPORTANT) =================
+
+# 1️⃣ Binary Encoding (Yes/No → 1/0)
+# Used for 2-category features.
+# Must use EXACT same mapping as training.
+# Example: {'yes':1, 'no':0}
+# ⚠ Never change mapping in Streamlit.
+
+# 2️⃣ Label Encoding
+# Converts multiple categories into numbers (0,1,2,...).
+# ⚠ Model does NOT understand meaning --- only numbers.
+# ⚠ Mapping depends on training (LabelEncoder alphabetical order).
+
+
+# 🟢 Random Forest / Decision Tree → Label Encoding OK
+# Reason: Tree models split by rules, not by numeric distance.
+
+# Example (Label Encoding):
+# furnishingstatus:
+# furnished        → 0
+# semi-furnished   → 1
+# unfurnished      → 2
+
+# Model handles it safely because they treat encoded values as separate categories, not ordered numbers.
+# So no fake priority problem like in Linear Regression.
+
+
+# Must save and reuse SAME encoder in deployment.
+# Example:
+# joblib.dump(le, "encoder.pkl")
+# le = joblib.load("encoder.pkl")
+
+# 3️⃣ One Hot Encoding
+# Used for Linear/Distance-based models.
+# Avoids fake order assumption.
+# Each category becomes separate column.
+
+
+# 🟢 Linear Regression / KNN / SVM → One Hot Encoding Preferred
+# Reason: These models assume numeric distance.
+# Label encoding creates fake order assumption.
+
+# ❌ Label Encoding problem in LR:
+# furnished=0, semi=1, unfurnished=2
+# LR assumes: 2 > 1 > 0 and equal gap (wrong assumption)
+
+# ✅ One Hot Encoding solution:
+# furnished        → [1,0,0]
+# semi-furnished   → [0,1,0]
+# unfurnished      → [0,0,1]
+#
+# Each category gets independent weight.
+
+
+# Must ensure SAME dummy columns in training & prediction.
+# Training:
+# df = pd.get_dummies(df, columns=['furnishingstatus'], drop_first=True)
+
+# Save feature order:
+# joblib.dump(X.columns.tolist(), "feature_order.pkl")
+
+# In Streamlit:
+# input_df = pd.get_dummies(input_df)
+# input_df = input_df[feature_order]  # ensure same columns
+
+
+# ================= FEATURE ORDER RULE =================
+
+# 1. why np.array/double list but not single list --> Model wants input in table formats
+#  means 2D shape (rows or no. of samples, cols or features),
+# outer [] = for row -- inner [] = for col 
+# single list = 1D shape(12,) model can't distinguise whether it's house or feature. 
+# In case of mine --> shape(1, 12). This model predict one house price at once.
+
+# 2. Why maintain features order manually in streamlit as trained model?
+#  - Usinge np.array or list of list[[]] -- Model doesn't know features name, it stores col index.
+#  - Using df -- Model stores cols name, order no. which makes easier to debug.
+#    ~If column missing → error immediately   
+#    ~If spelling wrong → error immediately
+#    ~If order misarrange → error immediately --> ❌
+#       df = safer for production
+#       np.array = can feature's name change
+#       Order need to maintain manually whether use np.array or df.
+
+# Best practice:
+# Save feature order during training:
+# joblib.dump(X.columns.tolist(), "feature_order.pkl")
+
+# In Streamlit:
+# feature_order = joblib.load("feature_order.pkl")
+# input_df = input_df[feature_order]
+
+
+
+
+# ================= DEPLOYMENT RULE =================
+# - Same encoding as training
+# - Same feature order as training
+# - Same number of features
+# - Input must be 2D
+# ===================================================
